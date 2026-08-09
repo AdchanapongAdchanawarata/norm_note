@@ -551,7 +551,8 @@ kbd {
 
 .mac-intro {
     text-align: center;
-    margin-bottom: 8rem;
+    margin-bottom: 20rem; /* Massive spacing to separate Philosophy and Features */
+    padding-top: 5rem;
 }
 
 .mac-super-headline {
@@ -568,13 +569,22 @@ kbd {
     flex-direction: column;
     align-items: center;
     opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(60px); /* Increased movement */
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mac-section img {
+    transform: scale(1.05);
+    transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mac-section.fade-up.visible {
     opacity: 1;
     transform: translateY(0);
+}
+
+.mac-section.fade-up.visible img {
+    transform: scale(1);
 }
 
 /* Fallback for elements already in view before script loads */
