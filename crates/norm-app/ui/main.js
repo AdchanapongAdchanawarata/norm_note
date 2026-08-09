@@ -1178,6 +1178,7 @@ if (importBtn && importDropdown) {
                     if (importedIds[0] && importedIds[0].endsWith('.md')) {
                         selectNote(importedIds[0]);
                     }
+                    showAlert('Done! Import successfully completed.');
                 }
             } catch (err) {
                 console.error('Import failed', err);
@@ -1346,33 +1347,75 @@ const fontSizeSelect = document.getElementById('font-size-select');
 const themeAccentColor = document.getElementById('theme-accent-color');
 function applyPreferences(prefs) {
     document.documentElement.setAttribute('data-theme', prefs.theme || 'light');
-    document.documentElement.style.setProperty('--accent-color', prefs.accentColor || '#ff9800');
-    document.documentElement.style.setProperty('--accent', prefs.accentColor || '#ff9800');
+    document.documentElement.style.setProperty('--accent-color', prefs.accentColor || '#ff5e00');
+    document.documentElement.style.setProperty('--accent', prefs.accentColor || '#ff5e00');
     
     document.body.style.fontFamily = prefs.font || "'Inter', sans-serif";
-    if (prefs.fontSize) {
-        document.documentElement.style.fontSize = prefs.fontSize;
-    }
+    const fontSize = prefs.fontSize || "16px";
+    document.documentElement.style.fontSize = fontSize;
     
     // Update inputs
-    themeSelect.value = prefs.theme || 'light';
-    fontSelect.value = prefs.font || "'Inter', sans-serif";
-    fontSizeSelect.value = prefs.fontSize || "14px";
-    themeAccentColor.value = prefs.accentColor || '#ff9800';
+    if (themeSelect) themeSelect.value = prefs.theme || 'light';
+    if (fontSelect) fontSelect.value = prefs.font || "'Inter', sans-serif";
+    if (fontSizeSelect) fontSizeSelect.value = fontSize;
+    if (themeAccentColor) themeAccentColor.value = prefs.accentColor || '#ff5e00';
 }
 
 function loadPreferences() {
     const saved = localStorage.getItem('norm-preferences');
     if (saved) {
         applyPreferences(JSON.parse(saved));
+    } else {
+        applyPreferences({});
+        // First install popup
+        setTimeout(() => {
+            if (openSettingsBtn) openSettingsBtn.click();
+            showAlert("Welcome to NormNote!\n\nTo sync your notes across devices, please choose a Vault Location inside your iCloud Drive or Google Drive.");
+        }, 500);
     }
 }
 
 const backupVaultBtn = document.getElementById('backup-vault-btn');
 const restoreVaultBtn = document.getElementById('restore-vault-btn');
 
-openSettingsBtn.onclick = () => settingsModal.style.display = 'flex';
+const vaultLocationInput = document.getElementById('vault-location-input');
+const changeVaultBtn = document.getElementById('change-vault-btn');
+
+async function updateVaultLocationUI() {
+    if (invoke && vaultLocationInput) {
+        try {
+            const path = await invoke('get_current_vault_path');
+            vaultLocationInput.value = path;
+        } catch (e) {
+            console.error("Failed to get vault path", e);
+        }
+    }
+}
+
+openSettingsBtn.onclick = () => {
+    updateVaultLocationUI();
+    settingsModal.style.display = 'flex';
+};
 closeSettingsBtn.onclick = () => settingsModal.style.display = 'none';
+
+if (changeVaultBtn) {
+    changeVaultBtn.onclick = async () => {
+        try {
+            const newPath = await invoke('choose_vault_location_dialog');
+            if (newPath) {
+                await invoke('set_vault_location', { path: newPath });
+                vaultLocationInput.value = newPath;
+                showAlert('Vault location updated successfully!');
+                await loadNotes(); // Reload notes from new vault
+            }
+        } catch (e) {
+            if (e !== 'Cancelled') {
+                console.error("Failed to change vault location", e);
+                showAlert('Failed to change vault location: ' + e);
+            }
+        }
+    };
+}
 
 if (backupVaultBtn) {
     backupVaultBtn.onclick = async () => {
@@ -1610,9 +1653,40 @@ if (exportBtn && exportDropdown) {
                     } else if (title) {
                         titleHtml = `<h1>${title}</h1>\n`;
                     }
-                    previewContainer.innerHTML = titleHtml + mdConverter.makeHtml(body);
+                    const el = document.createElement('div');
+                    el.innerHTML = titleHtml + mdConverter.makeHtml(body);
+                    el.style.padding = '20px';
+                    el.style.fontFamily = document.body.style.fontFamily;
+                    el.style.fontSize = document.documentElement.style.fontSize;
+                    el.style.color = 'black'; // force print colors
+                    
+                    if (window.html2pdf) {
+                        const opt = {
+                            margin:       0.5,
+                            filename:     `${title.replace(/[/\\?%*:|"<>]/g, '-')}.pdf`,
+                            image:        { type: 'jpeg', quality: 0.98 },
+                            html2canvas:  { scale: 2 },
+                            jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+                        };
+                        html2pdf().set(opt).from(el).outputPdf('datauristring').then(async base64 => {
+                            try {
+                                await invoke('export_pdf_dialog', {
+                                    title: opt.filename,
+                                    base64Data: base64
+                                });
+                                showAlert('Done! Export successfully completed.');
+                            } catch (err) {
+                                console.error('PDF export failed', err);
+                                showAlert('PDF Export failed: ' + err);
+                            }
+                        }).catch(err => {
+                            console.error('PDF generation failed', err);
+                            showAlert('PDF Generation failed: ' + err);
+                        });
+                    } else {
+                        showAlert('PDF Exporter is loading, please try again in a moment.');
+                    }
                 }
-                window.print();
                 return;
             }
             
@@ -1624,6 +1698,7 @@ if (exportBtn && exportDropdown) {
                     txtContent: txt_content,
                     htmlContent: html_content
                 });
+                showAlert('Done! Export successfully completed.');
             } catch (err) {
                 console.error('Export failed', err);
                 showAlert('Export failed: ' + err);

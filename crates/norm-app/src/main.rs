@@ -14,11 +14,44 @@ use norm_core::doc::DocId;
 use norm_core::oplog::{DeviceId, VaultKey};
 use norm_core::workspace::Workspace;
 
-fn get_vault_path() -> PathBuf {
-    let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(home).join("Documents").join("NormNoteVault")
+#[derive(Serialize, Deserialize, Default)]
+struct AppConfig {
+    vault_path: Option<String>,
 }
 
+fn get_config_path() -> PathBuf {
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".to_string());
+    PathBuf::from(home).join(".normnote_config.json")
+}
+
+fn read_config() -> AppConfig {
+    if let Ok(content) = std::fs::read_to_string(get_config_path()) {
+        if let Ok(config) = serde_json::from_str(&content) {
+            return config;
+        }
+    }
+    AppConfig::default()
+}
+
+fn save_config(config: &AppConfig) {
+    if let Ok(content) = serde_json::to_string_pretty(config) {
+        let _ = std::fs::write(get_config_path(), content);
+    }
+}
+
+fn get_vault_path() -> PathBuf {
+    let config = read_config();
+    if let Some(path) = config.vault_path {
+        PathBuf::from(path)
+    } else {
+        let home = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .unwrap_or_else(|_| ".".to_string());
+        PathBuf::from(home).join("Documents").join("NormNoteVault")
+    }
+}
 #[derive(Serialize)]
 struct NoteItem {
     id: String,
@@ -161,6 +194,27 @@ fn export_note_dialog(format: String, title: String, md_content: String, txt_con
             _ => updated_md,
         };
         std::fs::write(path, content).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn export_pdf_dialog(title: String, base64_data: String) -> Result<(), String> {
+    let dialog = rfd::FileDialog::new()
+        .set_file_name(&title)
+        .add_filter("PDF (*.pdf)", &["pdf"]);
+        
+    if let Some(path) = dialog.save_file() {
+        // Strip the data URI prefix if it exists (e.g. "data:application/pdf;base64,")
+        let b64 = if let Some(idx) = base64_data.find("base64,") {
+            &base64_data[idx + 7..]
+        } else {
+            &base64_data
+        };
+        
+        use base64::{Engine as _, engine::general_purpose::STANDARD};
+        let bytes = STANDARD.decode(b64).map_err(|e| e.to_string())?;
+        std::fs::write(path, bytes).map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -564,6 +618,33 @@ fn update_recent_menu(app: tauri::AppHandle, recent_notes: Vec<(String, String)>
     }
 }
 
+#[tauri::command]
+fn get_current_vault_path() -> Result<String, String> {
+    Ok(get_vault_path().to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+fn choose_vault_location_dialog() -> Result<String, String> {
+    if let Some(path) = rfd::FileDialog::new().pick_folder() {
+        return Ok(path.to_string_lossy().into_owned());
+    }
+    Err("Cancelled".into())
+}
+
+#[tauri::command]
+fn set_vault_location(path: String, state: State<AppState>) -> Result<(), String> {
+    let mut config = read_config();
+    config.vault_path = Some(path);
+    save_config(&config);
+    
+    // Reinitialize workspace with new path
+    let workspace = init_workspace();
+    let mut ws = state.workspace.lock().unwrap();
+    *ws = workspace;
+    
+    Ok(())
+}
+
 fn main() {
     let workspace = init_workspace();
     
@@ -577,6 +658,7 @@ fn main() {
             read_note,
             delete_note,
             export_note_dialog,
+            export_pdf_dialog,
             import_files_dialog,
             import_image_dialog,
             import_image_asset,
@@ -584,7 +666,10 @@ fn main() {
             read_image_bytes,
             backup_vault,
             restore_vault,
-            update_recent_menu
+            update_recent_menu,
+            get_current_vault_path,
+            choose_vault_location_dialog,
+            set_vault_location
         ])
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()

@@ -80,8 +80,8 @@ body {
     transition: background-color 0.2s;
 }
 
-.sidebar-resizer:hover, .sidebar-resizer.is-resizing {
-    background-color: var(--accent-color);
+.sidebar-resizer:hover::after, .sidebar-resizer.is-resizing::after {
+    background-color: var(--border-color); /* Subtle indicator instead of orange */
 }
 
 #app.sidebar-collapsed .sidebar {
@@ -632,7 +632,7 @@ body {
     left: 2px;
     width: 24px;
     height: 24px;
-    background: var(--bg-color);
+    background: var(--accent-color);
     border-radius: 12px;
     transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
@@ -656,11 +656,11 @@ body {
 }
 .mode-toggle:not(.view) .edit-mode {
     opacity: 1;
-    color: var(--accent-color); /* Orange */
+    color: #ffffff;
 }
 .mode-toggle.view .view-mode {
     opacity: 1;
-    color: var(--accent-color); /* Orange */
+    color: #ffffff;
 }
 .folder-header > div > svg {
     color: var(--accent-color);
@@ -711,12 +711,12 @@ input[type="color"]::-webkit-color-swatch {
 .drop-before::before {
     content: '';
     position: absolute;
-    top: 0px;
+    top: -1px;
     left: 0;
     right: 0;
-    height: 1px;
+    height: 2px;
     background-color: var(--accent-color);
-    z-index: 10;
+    z-index: 100;
     border-radius: 2px;
 }
 .drop-after {
@@ -725,12 +725,12 @@ input[type="color"]::-webkit-color-swatch {
 .drop-after::after {
     content: '';
     position: absolute;
-    bottom: 0px;
+    bottom: -1px;
     left: 0;
     right: 0;
-    height: 1px;
+    height: 2px;
     background-color: var(--accent-color);
-    z-index: 10;
+    z-index: 100;
     border-radius: 2px;
 }
 

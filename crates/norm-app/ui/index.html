@@ -173,9 +173,17 @@
                         <option value="dark">Dark Mode</option>
                     </select>
                 </div>
+                <div class="setting-item">
+                    <span>Vault Location</span>
+                    <div style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
+                        <input type="text" id="vault-location-input" readonly style="flex: 1; padding: 8px; font-size: 12px; background: rgba(0,0,0,0.05); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color);" />
+                        <button id="change-vault-btn" class="circle-btn" style="width: 52px; height: 52px; font-size: 10px; flex-shrink: 0; background-color: #333333; color: white; border: none;">Browse</button>
+                    </div>
+                    <div style="font-size: 11px; opacity: 0.6; margin-top: 8px;">Choose an iCloud or Google Drive folder to automatically sync your notes across devices.</div>
+                </div>
                 <div class="setting-group">
                     <label>Accent Color</label>
-                    <input type="color" id="theme-accent-color" value="#ff9800" 
+                    <input type="color" id="theme-accent-color" value="#ff5e00" 
 style="width: 28px; height: 28px; border: none; border-radius: 50%; cursor: pointer; padding: 0; overflow: hidden; background: none; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
                 </div>
                 <div class="setting-group">
@@ -195,7 +203,7 @@ style="width: 28px; height: 28px; border: none; border-radius: 50%; cursor: poin
                     <select id="font-size-select">
                         <option value="12px">Small (12px)</option>
                         <option value="14px">Normal (14px)</option>
-                        <option value="16px">Large (16px)</option>
+                        <option value="16px" selected>Large (16px)</option>
                         <option value="18px">Huge (18px)</option>
                     </select>
                 </div>
@@ -237,7 +245,7 @@ style="width: 28px; height: 28px; border: none; border-radius: 50%; cursor: poin
             <input type="text" id="modal-input" class="modal-input" style="display: none;" />
             <div class="modal-actions">
                 <button id="modal-cancel-btn" class="modal-btn">Cancel</button>
-                <button id="modal-ok-btn" class="modal-btn primary">OK</button>
+                <button id="modal-ok-btn" class="modal-btn primary" style="width: 44px; height: 44px; border-radius: 50%; padding: 0; display: flex; justify-content: center; align-items: center;">OK</button>
             </div>
         </div>
     </div>
@@ -262,6 +270,8 @@ style="width: 28px; height: 28px; border: none; border-radius: 50%; cursor: poin
                     <p>Keep your thoughts organized with infinite nested folders.</p>
                     <ul>
                         <li><strong>New Folder:</strong> Click the folder icon in the sidebar or press <code>⌘⇧N</code>.</li>
+                        <p><strong>Cloud Sync:</strong> NormNote uses local files. To sync across devices, go to Settings and change your <strong>Vault Location</strong> to a folder inside iCloud Drive, Google Drive, or Dropbox.</p>
+                        <p><strong>Images:</strong> Drag & drop images into the editor to automatically import and link them.</p>
                         <li><strong>Reorganize:</strong> Drag and drop notes into folders, or drag folders into other folders.</li>
                         <li><strong>Merge Folders:</strong> Drag one folder over another folder to merge all their contents together.</li>
                         <li><strong>Rename/Delete/Duplicate:</strong> Right-click or hover over a folder to see actions.</li>
@@ -323,7 +333,9 @@ style="width: 28px; height: 28px; border: none; border-radius: 50%; cursor: poin
         </div>
     </div>
     
-    <script src="showdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="main.js?v=36"></script>
 </body>
 </html>
