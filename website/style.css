@@ -15,12 +15,21 @@
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: 'Outfit', -apple-system, sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
     line-height: 1.6;
     overflow-x: hidden;
+}
+
+/* Fix for sticky navbar overlapping anchor targets */
+[id] {
+    scroll-margin-top: 140px;
 }
 
 /* Navbar */
