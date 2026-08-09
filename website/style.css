@@ -82,7 +82,7 @@ body {
     background: var(--text-color) !important;
     color: var(--bg-color) !important;
     padding: 10px 24px;
-    border-radius: 8px;
+    border-radius: 50px;
     font-weight: 700 !important;
 }
 
@@ -138,7 +138,7 @@ body {
 
 .btn {
     padding: 16px 36px;
-    border-radius: 8px;
+    border-radius: 50px;
     font-size: 1.1rem;
     font-weight: 700;
     text-decoration: none;
