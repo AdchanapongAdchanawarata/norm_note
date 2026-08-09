@@ -32,7 +32,7 @@ pub fn save(root: &Path, id: &DocId, content: &str) -> Result<()> {
 
     let hash = blake3::hash(content.as_bytes()).to_hex().to_string();
     let path = dir.join(format!("{}.md", hash));
-    
+
     // Use an atomic write (write to .tmp, then rename)
     let tmp = {
         let mut s = path.clone().into_os_string();
@@ -45,7 +45,7 @@ pub fn save(root: &Path, id: &DocId, content: &str) -> Result<()> {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);
-    
+
     writeln!(f, "<!-- deleted: {} at {} -->", id.as_str(), timestamp)?;
     f.write_all(content.as_bytes())?;
     f.sync_all()?;
@@ -66,8 +66,12 @@ pub fn list(root: &Path) -> Result<Vec<TrashEntry>> {
         let entry = entry?;
         let path = entry.path();
         if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("md") {
-            let hash = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_string();
-            
+            let hash = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("")
+                .to_string();
+
             if let Ok(content) = fs::read_to_string(&path) {
                 if let Some(line) = content.lines().next() {
                     if line.starts_with("<!-- deleted: ") && line.ends_with(" -->") {
@@ -93,11 +97,11 @@ pub fn list(root: &Path) -> Result<Vec<TrashEntry>> {
 pub fn restore(root: &Path, hash: &str) -> Result<Option<(DocId, String)>> {
     let dir = trash_dir(root);
     let path = dir.join(format!("{}.md", hash));
-    
+
     if !path.exists() {
         return Ok(None);
     }
-    
+
     let content = fs::read_to_string(&path)?;
     let mut lines = content.lines();
     if let Some(line) = lines.next() {
@@ -105,26 +109,31 @@ pub fn restore(root: &Path, hash: &str) -> Result<Option<(DocId, String)>> {
             let inner = &line["<!-- deleted: ".len()..line.len() - " -->".len()];
             if let Some(at_idx) = inner.rfind(" at ") {
                 let doc_id = inner[..at_idx].to_string();
-                let rest = content[line.len()..].trim_start_matches('\r').trim_start_matches('\n');
-                return Ok(Some((DocId::from_relative_path(Path::new(&doc_id)), rest.to_string())));
+                let rest = content[line.len()..]
+                    .trim_start_matches('\r')
+                    .trim_start_matches('\n');
+                return Ok(Some((
+                    DocId::from_relative_path(Path::new(&doc_id)),
+                    rest.to_string(),
+                )));
             }
         }
     }
-    
+
     Ok(None)
 }
 
 pub fn purge(root: &Path, max_age_days: u32) -> Result<usize> {
     let entries = list(root)?;
     let mut removed = 0;
-    
+
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);
-        
+
     let max_age_secs = (max_age_days as u64) * 24 * 60 * 60;
-    
+
     for entry in entries {
         if let Ok(ts) = entry.deleted_at.parse::<u64>() {
             if now.saturating_sub(ts) >= max_age_secs {
@@ -134,6 +143,6 @@ pub fn purge(root: &Path, max_age_days: u32) -> Result<usize> {
             }
         }
     }
-    
+
     Ok(removed)
 }

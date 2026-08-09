@@ -133,7 +133,11 @@ fn main() -> Result<()> {
         .init();
 
     match cli.command {
-        Command::Init { vault, target, encrypt } => init(&vault, target, encrypt),
+        Command::Init {
+            vault,
+            target,
+            encrypt,
+        } => init(&vault, target, encrypt),
         Command::Join {
             vault,
             target,
@@ -165,7 +169,7 @@ fn init(vault: &PathBuf, target: Option<PathBuf>, encrypt: bool) -> Result<()> {
 
     let config = VaultConfig::create(target)?;
     let key = norm_core::config::random32()?;
-    
+
     let passphrase = if encrypt {
         let p1 = rpassword::prompt_password("Enter passphrase to encrypt the key: ")?;
         let p2 = rpassword::prompt_password("Confirm passphrase: ")?;
@@ -176,7 +180,7 @@ fn init(vault: &PathBuf, target: Option<PathBuf>, encrypt: bool) -> Result<()> {
     } else {
         None
     };
-    
+
     keyring::store(config.vault_id, &key, passphrase.as_deref())?;
     config.save(vault)?;
 
@@ -223,7 +227,7 @@ fn join(vault: &PathBuf, target: PathBuf, recovery: &str, encrypt: bool) -> Resu
     // same device id would collide on oplog paths, which is the one thing the
     // format is built to make impossible.
     let config = VaultConfig::create(Some(target))?;
-    
+
     let passphrase = if encrypt {
         let p1 = rpassword::prompt_password("Enter passphrase to encrypt the key: ")?;
         let p2 = rpassword::prompt_password("Confirm passphrase: ")?;
@@ -234,7 +238,7 @@ fn join(vault: &PathBuf, target: PathBuf, recovery: &str, encrypt: bool) -> Resu
     } else {
         None
     };
-    
+
     keyring::store(config.vault_id, &key, passphrase.as_deref())?;
     config.save(vault)?;
 
@@ -442,6 +446,9 @@ fn trash_restore(vault: &PathBuf, hash: &str) -> Result<()> {
 
 fn trash_empty(vault: &PathBuf, days: u32) -> Result<()> {
     let removed = norm_core::trash::purge(vault, days)?;
-    println!("Emptied {} notes from trash older than {} days.", removed, days);
+    println!(
+        "Emptied {} notes from trash older than {} days.",
+        removed, days
+    );
     Ok(())
 }

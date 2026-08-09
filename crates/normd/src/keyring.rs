@@ -37,9 +37,9 @@ use norm_core::config::VaultId;
 use norm_core::oplog::VaultKey;
 
 use argon2::Argon2;
-use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use chacha20poly1305::aead::{Aead, KeyInit};
-use rand_core::{RngCore, OsRng};
+use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
+use rand_core::{OsRng, RngCore};
 
 /// Per-user configuration directory, resolved without a dependency so the
 /// behaviour is auditable in one screen.
@@ -117,22 +117,30 @@ pub fn store(vault: VaultId, key: &[u8; 32], passphrase: Option<&str>) -> Result
     if let Some(pass) = passphrase {
         let mut salt = [0u8; 16];
         OsRng.fill_bytes(&mut salt);
-        
+
         let mut nonce_bytes = [0u8; 12];
         OsRng.fill_bytes(&mut nonce_bytes);
 
         let argon2 = Argon2::default();
         let mut kek = [0u8; 32];
-        argon2.hash_password_into(pass.as_bytes(), &salt, &mut kek)
+        argon2
+            .hash_password_into(pass.as_bytes(), &salt, &mut kek)
             .map_err(|_| anyhow::anyhow!("Failed to derive key"))?;
 
         let cipher = ChaCha20Poly1305::new(Key::from_slice(&kek));
         let nonce = Nonce::from_slice(&nonce_bytes);
-        
-        let ciphertext = cipher.encrypt(nonce, key.as_ref())
+
+        let ciphertext = cipher
+            .encrypt(nonce, key.as_ref())
             .map_err(|_| anyhow::anyhow!("Encryption failed"))?;
 
-        writeln!(file, "ENCRYPTED {} {} {}", to_hex(&salt), to_hex(&nonce_bytes), to_hex(&ciphertext))?;
+        writeln!(
+            file,
+            "ENCRYPTED {} {} {}",
+            to_hex(&salt),
+            to_hex(&nonce_bytes),
+            to_hex(&ciphertext)
+        )?;
     } else {
         file.write_all(to_hex(key).as_bytes())?;
         file.write_all(b"\n")?;
@@ -157,24 +165,26 @@ pub fn load(vault: VaultId) -> Result<VaultKey> {
         if parts.len() != 4 {
             bail!("Malformed encrypted key file at {}", path.display());
         }
-        
+
         let salt = from_hex(parts[1])?;
         let nonce_bytes = from_hex(parts[2])?;
         let ciphertext = from_hex(parts[3])?;
 
         let pass = rpassword::prompt_password("Enter passphrase to unlock the vault key: ")?;
-        
+
         let argon2 = Argon2::default();
         let mut kek = [0u8; 32];
-        argon2.hash_password_into(pass.as_bytes(), &salt, &mut kek)
+        argon2
+            .hash_password_into(pass.as_bytes(), &salt, &mut kek)
             .map_err(|_| anyhow::anyhow!("Failed to derive key"))?;
 
         let cipher = ChaCha20Poly1305::new(Key::from_slice(&kek));
         let nonce = Nonce::from_slice(&nonce_bytes);
-        
-        let decrypted = cipher.decrypt(nonce, ciphertext.as_ref())
+
+        let decrypted = cipher
+            .decrypt(nonce, ciphertext.as_ref())
             .map_err(|_| anyhow::anyhow!("Incorrect passphrase or corrupted key file"))?;
-            
+
         if decrypted.len() != 32 {
             bail!("Decrypted key is not 32 bytes");
         }

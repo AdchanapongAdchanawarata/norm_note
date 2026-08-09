@@ -352,7 +352,12 @@ impl Replica {
 
     /// Loads previously persisted applied chunk ids.
     pub fn load_applied(&mut self) -> Result<()> {
-        let path = self.store.root().join(".norm").join("state").join("applied");
+        let path = self
+            .store
+            .root()
+            .join(".norm")
+            .join("state")
+            .join("applied");
         let text = match std::fs::read_to_string(&path) {
             Ok(t) => t,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
@@ -361,15 +366,14 @@ impl Replica {
 
         for line in text.lines() {
             let line = line.trim();
-            if line.is_empty() { continue; }
+            if line.is_empty() {
+                continue;
+            }
             let mut parts = line.splitn(2, ' ');
             let (Some(dev_hex), Some(seq_str)) = (parts.next(), parts.next()) else {
                 continue;
             };
-            if let (Some(device), Ok(seq)) = (
-                DeviceId::from_hex(dev_hex),
-                seq_str.parse::<u64>()
-            ) {
+            if let (Some(device), Ok(seq)) = (DeviceId::from_hex(dev_hex), seq_str.parse::<u64>()) {
                 self.applied.insert(ChunkId {
                     device,
                     seq,

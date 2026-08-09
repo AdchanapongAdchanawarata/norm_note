@@ -93,7 +93,10 @@ pub struct DiskScan {
 
 impl DiskScan {
     pub fn is_empty(&self) -> bool {
-        self.external_edits.is_empty() && self.new_notes.is_empty() && self.rescued.is_empty() && self.deleted.is_empty()
+        self.external_edits.is_empty()
+            && self.new_notes.is_empty()
+            && self.rescued.is_empty()
+            && self.deleted.is_empty()
     }
 }
 
