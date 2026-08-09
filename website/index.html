@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NormNote - The Unfair Advantage in Note-Taking</title>
+    <meta name="description" content="Stop paying for slow, bloated note apps. NormNote is the blazing fast, local-first alternative built on Rust.">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <nav class="navbar">
+        <div class="logo">
+            <img src="assets/new_nn_logo.png" alt="NormNote Logo" class="nav-logo">
+        </div>
+        <div class="nav-links">
+            <a href="#why-switch">Philosophy</a>
+            <a href="#features">Features</a>
+            <a href="docs.html">Documentation</a>
+            <a href="https://github.com/AdchanapongAdchanawarata/norm_note/releases" class="nav-cta">Download Free</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">A Minimalist Sanctuary for Your Thoughts</div>
+            <h1>Clear your mind. <br><span class="accent">Own your thoughts.</span></h1>
+            
+            <p class="hero-subtitle">
+                Experience pure focus with a beautifully simple, local-first Markdown editor.<br>
+                Your files remain securely on your device—no accounts, no cloud lock-in, just unprecedented speed.
+            </p>
+
+            <div class="cta-group">
+                <div class="btn-row" style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                    <a href="https://github.com/AdchanapongAdchanawarata/norm_note/releases" class="btn btn-primary">Download for macOS</a>
+                    <a href="https://github.com/AdchanapongAdchanawarata/norm_note/releases" class="btn btn-secondary">Download for Windows</a>
+                </div>
+                <span class="cta-note">It's open-source. No credit card required.</span>
+            </div>
+            
+            <div class="hero-clean-showcase" style="width: 120%; margin-left: -10%;">
+                <!-- Image 1: The Massive Overview (shot3.png) -->
+                <div class="image-wrapper floating">
+                    <img src="assets/shot3.png" alt="NormNote Main Editor Overview" class="clean-img">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="mac-features-wrapper">
+        <div class="mac-intro">
+            <h2 class="mac-super-headline">Everything you need.<br>Nothing you don't.</h2>
+        </div>
+
+        <!-- Hero Feature: Distraction Free -->
+        <section class="mac-section mac-hero-feature fade-up">
+            <div class="mac-text-center">
+                <div class="mac-tag">DIETER RAMS DESIGN</div>
+                <h2 class="mac-headline">A distraction-free haven.</h2>
+                <p class="mac-subhead">Every pixel is meticulously crafted to stay out of your way. We removed all visual clutter so you can focus entirely on your writing. No heavy toolbars, no annoying popups. Just you and your thoughts.</p>
+            </div>
+            <div class="mac-image-container massive">
+                <img src="assets/shot2.png" alt="Distraction Free UI">
+            </div>
+        </section>
+
+        <!-- Split Feature: Local First -->
+        <section class="mac-section mac-split fade-up reverse">
+            <div class="mac-split-text">
+                <div class="mac-tag">100% LOCAL-FIRST</div>
+                <h2 class="mac-headline">Your notes.<br>Your hard drive.</h2>
+                <p class="mac-subhead">Other apps force you to create accounts and sync to proprietary clouds. NormNote operates entirely on your local machine. Want to sync? Just choose your iCloud or Google Drive folder.</p>
+            </div>
+            <div class="mac-split-image">
+                <img src="assets/shot1.png" alt="Preferences and Vault Location">
+            </div>
+        </section>
+
+        <!-- Split Feature: Infinite Org -->
+        <section class="mac-section fade-up" style="display: grid; grid-template-columns: 450px 1fr; gap: 6rem; width: 100%; padding-right: 4rem; align-items: center;">
+            <div class="mac-split-text" style="order: 1; max-width: 100%;">
+                <div class="mac-tag">INFINITE ORGANIZATION</div>
+                <h2 class="mac-headline">Organize<br>without limits.</h2>
+                <p class="mac-subhead">Your brain doesn't work in flat lists. Create infinite nested folders, drag and drop notes instantly, and manage a thousand projects without ever losing track of a single file.</p>
+            </div>
+            <div class="mac-split-image" style="order: 2; width: 100%;">
+                <img src="assets/shot7.png" alt="Infinite Nested Folders" style="width: 100%; height: auto; object-fit: contain;">
+            </div>
+        </section>
+
+        <!-- Hero Feature: Markdown -->
+        <section class="mac-section mac-hero-feature fade-up">
+            <div class="mac-text-center">
+                <div class="mac-tag">WHAT YOU SEE IS WHAT YOU GET</div>
+                <h2 class="mac-headline">Write at the speed of thought.</h2>
+                <p class="mac-subhead">Don't waste time switching between 'edit' and 'preview' modes. Toggle instantly between viewing and editing. Headings, bold text, lists, and images style themselves seamlessly.</p>
+            </div>
+            <div class="mac-image-container large">
+                <img src="assets/markdown_feature.png" alt="Realtime Markdown Edit Mode">
+            </div>
+        </section>
+
+        <!-- Split Feature: Search -->
+        <section class="mac-section fade-up" style="display: grid; grid-template-columns: 1fr 450px; gap: 6rem; width: 100%; padding-left: 4rem; align-items: center;">
+            <div class="mac-split-image" style="order: 1; width: 100%;">
+                <img src="assets/2.png" alt="Fast Search" style="width: 100%; height: auto; object-fit: contain;">
+            </div>
+            <div class="mac-split-text" style="order: 2; max-width: 100%;">
+                <div class="mac-tag">POWERFUL METADATA</div>
+                <h2 class="mac-headline">Find anything in milliseconds.</h2>
+                <p class="mac-subhead">Use hashtags inside your documents to instantly group related ideas. Our Rust-powered search backend scans thousands of files in the blink of an eye.</p>
+            </div>
+        </section>
+
+        <!-- Split Feature: Export -->
+        <section class="mac-section mac-split fade-up">
+            <div class="mac-split-text">
+                <div class="mac-tag">NO VENDOR LOCK-IN</div>
+                <h2 class="mac-headline">Export anywhere.<br>Instantly.</h2>
+                <p class="mac-subhead">Because your notes are saved as standard <code>.md</code> files, you own them forever. Need to share? Export to PDF, HTML, or plain text with a single click right from the editor toolbar.</p>
+            </div>
+            <div class="mac-split-image">
+                <img src="assets/1.png" alt="Export to PDF, HTML, Markdown">
+            </div>
+        </section>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <div class="logo" style="justify-content: center; margin-bottom: 2rem;">
+                <img src="assets/new_nn_logo.png" alt="NormNote Logo" class="nav-logo">
+            </div>
+            <h2>Ready to take back your focus?</h2>
+            <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap;">
+                <a href="https://github.com/AdchanapongAdchanawarata/norm_note/releases" class="btn btn-primary">Download for macOS</a>
+                <a href="https://github.com/AdchanapongAdchanawarata/norm_note/releases" class="btn btn-secondary">Download for Windows</a>
+            </div>
+            <p style="margin-top: 1rem; color: #666;">macOS & Windows</p>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - NormNote</title>
+    <meta name="description" content="Getting Started Guide and Documentation for NormNote.">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="docs-page">
+    
+    <nav class="navbar">
+        <div class="logo">
+            <a href="index.html"><img src="assets/logo_norm_note_wbsite.png" alt="NormNote Logo" class="nav-logo"></a>
+        </div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="https://github.com/AdchanapongAdchanawarata/norm_note/releases" class="nav-cta">Download Free</a>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <aside class="docs-sidebar">
+            <h3>Contents</h3>
+            <ul>
+                <li><a href="#getting-started">Getting Started</a></li>
+                <li><a href="#organization">Folders & Organization</a></li>
+                <li><a href="#editor">Notes & Editor</a></li>
+                <li><a href="#markdown">Markdown Guide</a></li>
+                <li><a href="#images">Working with Images</a></li>
+                <li><a href="#privacy">Data, Privacy & Vault</a></li>
+                <li><a href="#shortcuts">Keyboard Shortcuts</a></li>
+            </ul>
+        </aside>
+
+        <main class="docs-content">
+            <h1>NormNote Documentation</h1>
+            <p class="docs-intro">Welcome to the official guide. Learn how to maximize your focus and organize your second brain with NormNote.</p>
+
+            <section id="getting-started">
+                <h2>Getting Started</h2>
+                <p>NormNote is a beautiful, offline Markdown note-taking app designed for focus and productivity. Your notes are stored securely and locally in the <code>NormNoteVault</code> folder in your Documents.</p>
+            </section>
+
+            <section id="organization">
+                <h2>Folders & Organization</h2>
+                <p>Keep your thoughts organized with infinite nested folders.</p>
+                <ul class="docs-list">
+                    <li><strong>New Folder:</strong> Click the folder icon in the sidebar or press <kbd>⌘⇧N</kbd>.</li>
+                    <li><strong>Cloud Sync:</strong> NormNote uses local files. To sync across devices, go to Settings and change your Vault Location to a folder inside iCloud Drive, Google Drive, or Dropbox.</li>
+                    <li><strong>Reorganize:</strong> Drag and drop notes into folders, or drag folders into other folders.</li>
+                    <li><strong>Merge Folders:</strong> Drag one folder over another folder to merge all their contents together.</li>
+                    <li><strong>Rename/Delete/Duplicate:</strong> Right-click or hover over a folder to see actions.</li>
+                </ul>
+            </section>
+
+            <section id="editor">
+                <h2>Notes & Editor</h2>
+                <ul class="docs-list">
+                    <li><strong>Create:</strong> Click the '+' button or use <kbd>⌘N</kbd> to create a new note in the selected folder.</li>
+                    <li><strong>Multiple Selection:</strong> Use the checkbox or hold Shift/Cmd and click to select multiple notes. You can then bulk delete or merge them into one note.</li>
+                    <li><strong>Pin & Duplicate:</strong> Hover over a note to pin it to the top (star icon) or duplicate it.</li>
+                    <li><strong>Writing:</strong> Simply start typing. The editor supports GitHub Flavored Markdown and renders it beautifully in real-time.</li>
+                </ul>
+            </section>
+
+            <section id="markdown">
+                <h2>Markdown Guide</h2>
+                <div class="code-block">
+                    <code># Heading 1 to ###### Heading 6</code><br>
+                    <code>**bold text** or __bold__ (Shortcut: ⌘B)</code><br>
+                    <code>*italic text* or _italic_ (Shortcut: ⌘I)</code><br>
+                    <code>- item or * item for bulleted lists</code><br>
+                    <code>1. item for numbered lists</code><br>
+                    <code>> quote for blockquotes</code><br>
+                    <code>`code` for inline code, and triple backticks for blocks.</code><br>
+                    <code>[Link Text](https://url.com) for hyperlinks.</code>
+                </div>
+            </section>
+
+            <section id="images">
+                <h2>Working with Images</h2>
+                <p>Visuals make notes better. NormNote handles images seamlessly:</p>
+                <ul class="docs-list">
+                    <li><strong>Drag & Drop:</strong> Simply drag an image from your computer directly into the editor.</li>
+                    <li><strong>Import:</strong> Use the import image button in the editor toolbar.</li>
+                    <li><strong>Local Storage:</strong> All images are automatically copied to a hidden <code>.assets</code> folder inside your vault, ensuring your notes stay portable and offline.</li>
+                </ul>
+            </section>
+
+            <section id="privacy">
+                <h2>Data, Privacy & Vault</h2>
+                <p>NormNote respects your privacy. Everything is offline.</p>
+                <ul class="docs-list">
+                    <li><strong>Location:</strong> <code>~/Documents/NormNoteVault</code></li>
+                    <li><strong>Format:</strong> Notes are saved as standard <code>.md</code> plain text files.</li>
+                    <li><strong>Backup:</strong> Go to Settings (gear icon) > Backup Vault. This creates a <code>.zip</code> archive of all your notes and images.</li>
+                    <li><strong>Restore:</strong> Use the Restore Vault button to extract a previous backup.</li>
+                </ul>
+            </section>
+
+            <section id="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+                <div class="shortcuts-grid">
+                    <div class="shortcut-item"><span>New Note</span> <kbd>⌘N</kbd></div>
+                    <div class="shortcut-item"><span>New Folder</span> <kbd>⌘⇧N</kbd></div>
+                    <div class="shortcut-item"><span>Search Notes</span> <kbd>⌘F</kbd></div>
+                    <div class="shortcut-item"><span>Bold Text</span> <kbd>⌘B</kbd></div>
+                    <div class="shortcut-item"><span>Italicize Text</span> <kbd>⌘I</kbd></div>
+                    <div class="shortcut-item"><span>Undo</span> <kbd>⌘Z</kbd></div>
+                    <div class="shortcut-item"><span>Redo</span> <kbd>⌘⇧Z</kbd></div>
+                    <div class="shortcut-item"><span>Return to Editor</span> <kbd>⌘1</kbd></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-logo">
+                <img src="assets/logo_norm_note_wbsite.png" alt="NormNote Logo" style="height: 50px;">
+            </div>
+            <p style="margin-top: 1rem; color: #666;">Version 1.0.3 • 100% Free & Open Source</p>
+        </div>
+    </footer>
+
+</body>
+</html>

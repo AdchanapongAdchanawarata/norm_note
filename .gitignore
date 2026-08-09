@@ -17,3 +17,4 @@ crates/norm-app/src-tauri/target
 .env
 .env.local
 .keys
+.claude/
