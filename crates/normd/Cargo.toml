@@ -1,0 +1,24 @@
+[package]
+name = "normd"
+description = "norm_note sync daemon and CLI. Syncs a Markdown vault through a folder you own."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# The version is redundant for a path dependency but keeps it from being read
+# as a wildcard, which `cargo deny check bans` rejects — and it is required
+# anyway the day this gets published.
+norm-core = { path = "../norm-core", version = "0.1.0" }
+anyhow.workspace = true
+blake3.workspace = true
+ctrlc.workspace = true
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+argon2.workspace = true
+chacha20poly1305.workspace = true
+rpassword = "7"
+rand_core = { version = "0.6", features = ["std"] }

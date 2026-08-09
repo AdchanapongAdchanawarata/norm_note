@@ -1,0 +1,54 @@
+name: long-tests
+
+# The tests that take too long to run on every push, but which are the ones
+# most likely to find something. The five-year simulation is what turned up the
+# pruning bug where each device only cleaned up its own chunks and the others
+# pushed them straight back — a fault that needs a third device and years of
+# simulated time before it shows. Nobody would have run that by hand.
+#
+# Weekly, and on demand.
+
+on:
+  schedule:
+    # Sunday, 03:00 UTC.
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  simulation:
+    runs-on: ubuntu-latest
+    # Five simulated years across nine devices takes a while.
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: five years of five different people
+        run: cargo test --release --test personas -- --ignored --nocapture
+
+      - name: measurements on a real-sized vault
+        run: cargo test --release --test scale -- --ignored --nocapture
+
+  # Same simulation, different seeds. A single seed explores one path through
+  # the space of possible orderings; a failure that only happens under some
+  # other interleaving would never be seen otherwise.
+  other-seeds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: ["0xA1", "0xB2", "0xC3", "0xD4"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: one simulated year, seed ${{ matrix.seed }}
+        run: cargo test --release --test personas -- --ignored --nocapture
+        env:
+          NORM_SIM_SEED: ${{ matrix.seed }}
+          NORM_SIM_DAYS: "365"

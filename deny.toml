@@ -1,0 +1,73 @@
+# Structural enforcement of Guarantee G1 (Zero Egress).
+#
+# norm_note must never open a network socket except from `norm-net`, and
+# `norm-net` may only ever talk to hosts the *user* configured.
+#
+# v0.1 has no network code at all: the only sync transport is a folder on the
+# local filesystem (the user's own Dropbox/iCloud/NAS mount does the moving).
+# So every network-capable crate below is banned outright.
+#
+# When `norm-net` lands in v0.2, do NOT delete these entries — add
+#   wrappers = ["norm-net"]
+# to the specific ones it needs. That keeps the ban in force for every other
+# crate in the workspace and makes an accidental `cargo add reqwest` in
+# norm-core a build failure instead of a silent violation of G1.
+#
+# Run locally:  cargo deny check bans
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+deny = [
+    { name = "reqwest" },
+    { name = "hyper" },
+    { name = "hyper-util" },
+    { name = "ureq" },
+    { name = "curl" },
+    { name = "curl-sys" },
+    { name = "tonic" },
+    { name = "axum" },
+    { name = "actix-web" },
+    { name = "warp" },
+    { name = "tiny_http" },
+    { name = "quinn" },
+    { name = "rustls" },
+    { name = "native-tls" },
+    { name = "openssl" },
+    { name = "openssl-sys" },
+    { name = "trust-dns-resolver" },
+    { name = "hickory-resolver" },
+    { name = "mdns-sd" },
+    { name = "socket2" },
+    { name = "aws-sdk-s3" },
+    { name = "rusoto_s3" },
+    # Telemetry / crash reporting / analytics are banned permanently.
+    # These are not "not yet" — they are incompatible with G1 by definition.
+    { name = "sentry" },
+    { name = "opentelemetry" },
+    { name = "posthog-rs" },
+]
+
+[licenses]
+allow = [
+    "MIT",
+    "MIT-0",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Zlib",
+    # `notify`, the file watcher. A public-domain dedication, so there is
+    # nothing to comply with. Worth knowing that some organisations exclude
+    # CC0 because it expressly does not grant patent rights; that is a
+    # corporate-policy concern rather than a problem for this project, but it
+    # is the reason this entry is called out rather than added silently.
+    "CC0-1.0",
+]
+
+[advisories]
+yanked = "deny"

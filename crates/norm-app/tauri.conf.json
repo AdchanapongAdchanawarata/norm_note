@@ -1,0 +1,47 @@
+{
+  "productName": "NormNote",
+  "version": "0.1.0",
+  "identifier": "com.normnote.desktop",
+  "build": {
+    "frontendDist": "ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "title": "Norm Note",
+        "width": 1000,
+        "height": 700,
+        "decorations": true,
+        "transparent": true,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/adchanapong/norm_note/releases/latest/download/updater.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRDRkVCQ0EyMDhBMjVEClJXUmRvZ2lpdlA1TUFQekx4SGd5ODc4UDU3S1FNakNSSjVrV1FGNG1DYUd3NU5CeXpIZ1hwNzZ6Cg=="
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "macOS": {
+      "infoPlist": "Info.plist"
+    },
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+# Node
+node_modules
+dist
+.DS_Store
+
+# Rust / Tauri
+/target
+crates/norm-app/src-tauri/target
+**/*.rs.bk
+/.cargo/config.toml
+
+# Test vaults
+/scratch
+*.norm-test
+
+# App Data
+.env
+.env.local
+.keys

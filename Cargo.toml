@@ -1,0 +1,50 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/norm-core",
+    "crates/normd",
+    "crates/norm-app",
+    # "crates/norm-net",  # v0.2+ — the ONLY crate ever allowed to open a socket.
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+license = "MPL-2.0"
+repository = "https://github.com/USER/norm_note"
+
+[workspace.dependencies]
+anyhow = "1"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml_ng = "0.10"
+blake3 = "1"
+ctrlc = "3"
+getrandom = "0.4"
+clap = { version = "4", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# --- storage & sync ---
+automerge = "0.10"
+notify = "8"
+unicode-normalization = "0.1"
+walkdir = "2"
+rusqlite = { version = "0.40", features = ["bundled", "functions"] }
+
+# --- crypto: audited implementations only. See README "Cryptography". ---
+#
+# Held at 0.10 deliberately. 0.11 moves to aead 0.6, which changes the trait
+# API that `oplog::seal`/`open` are written against. 0.10.x is current-
+# generation RustCrypto, not an unmaintained version — there is no security
+# reason to rush. Bump it as its own change, with the oplog tests as the
+# check that the port is correct, rather than folding it into unrelated work.
+chacha20poly1305 = "0.10"
+argon2 = "0.5"
+zeroize = "1"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
