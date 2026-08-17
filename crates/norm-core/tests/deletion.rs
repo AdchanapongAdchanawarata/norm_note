@@ -16,7 +16,7 @@ fn setup(name: &str) -> (tempfile::TempDir, Workspace) {
 
 #[test]
 fn test_deletion_and_trash() {
-    let (dir, mut ws) = setup("test_deletion");
+    let (_dir, mut ws) = setup("test_deletion");
     let doc_id = DocId::from_relative_path(Path::new("test.md"));
 
     // 1. Create a note

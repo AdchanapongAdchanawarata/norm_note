@@ -83,7 +83,7 @@ fn init_workspace() -> Workspace {
 }
 
 #[tauri::command]
-fn get_notes(state: State<AppState>) -> Result<Vec<NoteItem>, String> {
+fn get_notes(state: State<'_, AppState>) -> Result<Vec<NoteItem>, String> {
     let mut ws = state.workspace.lock().unwrap();
     ws.pull_from_disk().map_err(|e| e.to_string())?;
 
@@ -128,7 +128,7 @@ fn get_notes(state: State<AppState>) -> Result<Vec<NoteItem>, String> {
 }
 
 #[tauri::command]
-fn read_note(id: String, state: State<AppState>) -> Result<String, String> {
+fn read_note(id: String, state: State<'_, AppState>) -> Result<String, String> {
     let ws = state.workspace.lock().unwrap();
     let doc_id = DocId::from_relative_path(std::path::Path::new(&id));
     let text = ws.replica().text(&doc_id).map_err(|e| e.to_string())?;
@@ -136,7 +136,7 @@ fn read_note(id: String, state: State<AppState>) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn save_note(id: String, content: String, state: State<AppState>) -> Result<(), String> {
+async fn save_note(id: String, content: String, state: State<'_, AppState>) -> Result<(), String> {
     let mut ws = state.workspace.lock().unwrap();
     let doc_id = DocId::from_relative_path(std::path::Path::new(&id));
 
@@ -149,7 +149,7 @@ fn save_note(id: String, content: String, state: State<AppState>) -> Result<(), 
 }
 
 #[tauri::command]
-fn delete_note(id: String, state: State<AppState>) -> Result<(), String> {
+async fn delete_note(id: String, state: State<'_, AppState>) -> Result<(), String> {
     let mut ws = state.workspace.lock().unwrap();
     let doc_id = DocId::from_relative_path(std::path::Path::new(&id));
 
@@ -236,7 +236,7 @@ fn export_pdf_dialog(title: String, base64_data: String) -> Result<(), String> {
 fn import_files_dialog(
     folder: String,
     filter_type: String,
-    state: State<AppState>,
+    state: State<'_, AppState>,
 ) -> Result<Vec<String>, String> {
     let mut dialog = rfd::FileDialog::new();
 
@@ -280,10 +280,8 @@ fn import_files_dialog(
                         .to_string_lossy()
                         .to_string();
                     let content = format!(
-                        "# {}\n\n![{}]({})\n",
-                        stem,
-                        stem,
-                        format!("assets://localhost/{}", asset_filename)
+                        "# {}\n\n![{}](assets://localhost/{})\n",
+                        stem, stem, asset_filename
                     );
 
                     let new_filename = format!("{}.md", timestamp);
@@ -336,7 +334,7 @@ fn import_files_dialog(
 }
 
 #[tauri::command]
-fn import_image_dialog(_state: State<AppState>) -> Result<String, String> {
+fn import_image_dialog(_state: State<'_, AppState>) -> Result<String, String> {
     if let Some(path) = rfd::FileDialog::new()
         .add_filter("Images", &["png", "jpg", "jpeg", "gif", "webp", "svg"])
         .pick_file()
@@ -364,7 +362,7 @@ fn import_image_dialog(_state: State<AppState>) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn import_image_asset(file_path: String, _state: State<AppState>) -> Result<String, String> {
+fn import_image_asset(file_path: String, _state: State<'_, AppState>) -> Result<String, String> {
     let source_path = PathBuf::from(&file_path);
     if !source_path.exists() || !source_path.is_file() {
         return Err("Invalid file path".to_string());
@@ -401,7 +399,7 @@ fn import_image_asset(file_path: String, _state: State<AppState>) -> Result<Stri
 fn import_image_bytes(
     bytes: Vec<u8>,
     ext: String,
-    _state: State<AppState>,
+    _state: State<'_, AppState>,
 ) -> Result<String, String> {
     let root = get_vault_path();
     let assets_dir = root.join(".assets");
@@ -482,7 +480,7 @@ fn backup_vault() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn restore_vault(state: State<AppState>) -> Result<(), String> {
+fn restore_vault(state: State<'_, AppState>) -> Result<(), String> {
     if let Some(path) = rfd::FileDialog::new()
         .add_filter("Zip Archive", &["zip"])
         .pick_file()
@@ -757,7 +755,7 @@ fn choose_vault_location_dialog() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn set_vault_location(path: String, state: State<AppState>) -> Result<(), String> {
+fn set_vault_location(path: String, state: State<'_, AppState>) -> Result<(), String> {
     let mut config = read_config();
     config.vault_path = Some(path);
     save_config(&config);
@@ -770,6 +768,13 @@ fn set_vault_location(path: String, state: State<AppState>) -> Result<(), String
     Ok(())
 }
 
+#[tauri::command]
+async fn flush_workspace(state: State<'_, AppState>) -> Result<(), String> {
+    let mut ws = state.workspace.lock().unwrap();
+    ws.push_to_disk().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 fn main() {
     let workspace = init_workspace();
 
@@ -779,9 +784,10 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             get_notes,
-            save_note,
-            read_note,
+            save_note, read_note,
             delete_note,
+            flush_workspace,
+            read_note,
             export_note_dialog,
             export_pdf_dialog,
             import_files_dialog,
@@ -894,15 +900,14 @@ fn main() {
                 }
             }
         })
-        .on_window_event(|window, event| match event {
-            tauri::WindowEvent::CloseRequested { api, .. } => {
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 #[cfg(target_os = "macos")]
                 {
                     let _ = window.hide();
                     api.prevent_close();
                 }
             }
-            _ => {}
         })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")

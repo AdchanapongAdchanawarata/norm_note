@@ -1,6 +1,27 @@
 const invoke = window.__TAURI__?.core?.invoke || window.__TAURI__?.invoke;
 const listen = window.__TAURI__?.event?.listen;
 
+// OS detection for keyboard shortcuts
+const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+document.addEventListener('DOMContentLoaded', () => {
+    if (isMac) {
+        document.documentElement.classList.add('is-mac');
+    } else {
+        document.documentElement.classList.add('is-windows');
+    }
+    const modSymbol = isMac ? '⌘' : 'Ctrl+';
+    const modText = isMac ? 'Cmd' : 'Ctrl';
+    
+    document.querySelectorAll('.mod-sym').forEach(el => el.textContent = modSymbol);
+    document.querySelectorAll('.mod-text').forEach(el => el.textContent = modText);
+    
+    const undoBtn = document.getElementById('undo-btn');
+    if (undoBtn) undoBtn.title = `Undo (${modText}+Z)`;
+    
+    const redoBtn = document.getElementById('redo-btn');
+    if (redoBtn) redoBtn.title = `Redo (${modText}+Y)`;
+});
+
 // showAlert must be defined before handleMenuAction which calls it
 function showAlert(message) {
     return new Promise((resolve) => {
@@ -45,6 +66,81 @@ window.addEventListener("unhandledrejection", function(event) {
         invoke('save_note', { id: 'js_errors.log', content: 'Unhandled rejection: ' + event.reason });
     }
 });
+
+
+
+// Context Menu State
+let contextMenuTargetId = null;
+let contextMenuTargetType = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const ctxMenu = document.getElementById('context-menu');
+    
+    document.addEventListener('click', () => {
+        if (ctxMenu) ctxMenu.style.display = 'none';
+    });
+
+    document.getElementById('ctx-rename')?.addEventListener('click', () => {
+        if (contextMenuTargetType === 'note') {
+            const item = document.querySelector(`.note-item[data-id="${contextMenuTargetId.replace(/"/g, '\\"')}"]`);
+            item?.querySelector('.rename-btn')?.click();
+        } else if (contextMenuTargetType === 'folder') {
+            const btn = document.querySelector(`.folder-header[data-folder="${contextMenuTargetId.replace(/"/g, '\\"')}"] .rename-folder-btn`);
+            btn?.click();
+        }
+    });
+    
+    document.getElementById('ctx-duplicate')?.addEventListener('click', () => {
+        if (contextMenuTargetType === 'note') {
+            const item = document.querySelector(`.note-item[data-id="${contextMenuTargetId.replace(/"/g, '\\"')}"]`);
+            item?.querySelector('.dup-note-btn')?.click();
+        } else if (contextMenuTargetType === 'folder') {
+            const btn = document.querySelector(`.folder-header[data-folder="${contextMenuTargetId.replace(/"/g, '\\"')}"] .dup-folder-btn`);
+            btn?.click();
+        }
+    });
+
+    document.getElementById('ctx-delete')?.addEventListener('click', () => {
+        if (contextMenuTargetType === 'note') {
+            const item = document.querySelector(`.note-item[data-id="${contextMenuTargetId.replace(/"/g, '\\"')}"]`);
+            item?.querySelector('.del-note-btn')?.click();
+        } else if (contextMenuTargetType === 'folder') {
+            const btn = document.querySelector(`.folder-header[data-folder="${contextMenuTargetId.replace(/"/g, '\\"')}"] .del-btn`);
+            btn?.click();
+        }
+    });
+
+    document.getElementById('ctx-move')?.addEventListener('click', async () => {
+        if (contextMenuTargetType === 'note') {
+            const folder = await showPrompt('Move to folder:', '');
+            if (folder !== null) await moveNoteToFolder(contextMenuTargetId, folder.trim());
+        } else if (contextMenuTargetType === 'folder') {
+            const targetFolder = await showPrompt('Merge folder into:', '');
+            if (targetFolder !== null && targetFolder.trim() !== '') await mergeFolderToFolder(contextMenuTargetId, targetFolder.trim());
+        }
+    });
+
+    document.getElementById('focus-btn')?.addEventListener('click', () => {
+        document.body.classList.toggle('focus-mode');
+    });
+});
+
+function showContextMenu(e, id, type) {
+    e.preventDefault();
+    contextMenuTargetId = id;
+    contextMenuTargetType = type;
+    const ctxMenu = document.getElementById('context-menu');
+    
+    ctxMenu.style.display = 'block';
+    
+    let x = e.clientX;
+    let y = e.clientY;
+    if (x + ctxMenu.offsetWidth > window.innerWidth) x -= ctxMenu.offsetWidth;
+    if (y + ctxMenu.offsetHeight > window.innerHeight) y -= ctxMenu.offsetHeight;
+    
+    ctxMenu.style.left = `${x}px`;
+    ctxMenu.style.top = `${y}px`;
+}
 
 function handleMenuAction(action) {
     if (invoke) {
@@ -203,10 +299,11 @@ document.getElementById('bulk-merge-btn').addEventListener('click', async () => 
             
             await invoke('save_note', { id: targetId, content: mergedContent });
             
-            const parsedTarget = await invoke('parse_markdown', { content: mergedContent });
             const targetNote = currentNotes.find(n => n.id === targetId);
             if (targetNote) {
-                targetNote.preview = parsedTarget.preview;
+                const parts = mergedContent.split('\n\n');
+                targetNote.title = parts[0] ? parts[0].replace(/^# /, '') : 'Untitled Note';
+                targetNote.preview = parts.slice(1).join('\n').substring(0, 50).replace(/\n/g, ' ');
             }
             
             pushSidebarAction({ type: 'BATCH_MERGE', targetId, oldTargetContent, newTargetContent: mergedContent, deletedNotes });
@@ -234,6 +331,7 @@ document.getElementById('bulk-duplicate-btn').addEventListener('click', async ()
     if (selectedNoteIds.size === 0) return;
     try {
         const ids = Array.from(selectedNoteIds);
+        const duplicatedNotes = [];
         for (const id of ids) {
             const note = currentNotes.find(n => n.id === id);
             if (!note) continue;
@@ -246,9 +344,13 @@ document.getElementById('bulk-duplicate-btn').addEventListener('click', async ()
             const oldIndex = noteOrder.indexOf(id);
             if (oldIndex !== -1) noteOrder.splice(oldIndex + 1, 0, newId);
             else noteOrder.push(newId);
+            
+            duplicatedNotes.push({ note: newNote, content: content });
         }
         saveNoteOrder();
-        // Just reload for now
+        
+        pushSidebarAction({ type: 'BATCH_DUPLICATE', notes: duplicatedNotes });
+        
         selectedNoteIds.clear();
         updateBulkActionBar();
         renderNotes();
@@ -315,6 +417,9 @@ function createNoteItem(note) {
     const item = document.createElement('div');
     item.dataset.id = note.id;
     item.className = 'note-item' + (note.id === activeNoteId ? ' active' : '') + (selectedNoteIds.has(note.id) ? ' selected' : '');
+    if (note.tags) item.dataset.tags = note.tags.join(' ');
+    
+    item.addEventListener('contextmenu', (e) => showContextMenu(e, note.id, 'note'));
     
     item.draggable = true;
     item.ondragstart = (e) => {
@@ -650,8 +755,59 @@ async function renameFolder(oldFolder, newFolder, pushHistory = true) {
 
 let activeTag = null;
 
+function renderTags() {
+    const tagsContainer = document.getElementById('tags-container');
+    if (!tagsContainer) return;
+    
+    if (tagsContainer) tagsContainer.innerHTML = '';
+    
+    // Extract unique tags
+    const allTags = new Set();
+    currentNotes.forEach(note => {
+        if (note.tags && Array.isArray(note.tags)) {
+            note.tags.forEach(tag => allTags.add(tag));
+        }
+    });
+    
+    const tags = Array.from(allTags).sort();
+    
+    if (tags.length === 0) {
+        tagsContainer.style.display = 'none';
+        return;
+    }
+    
+    tagsContainer.style.display = 'flex';
+    
+    tags.forEach(tag => {
+        const tagEl = document.createElement('div');
+        tagEl.className = 'tag-item';
+        tagEl.innerText = tag;
+        tagEl.style.padding = '2px 8px';
+        tagEl.style.borderRadius = '12px';
+        tagEl.style.fontSize = '12px';
+        tagEl.style.cursor = 'pointer';
+        tagEl.style.background = activeTag === tag ? 'var(--accent)' : 'var(--bg-color)';
+        tagEl.style.color = activeTag === tag ? '#fff' : 'var(--text-color)';
+        tagEl.style.border = '1px solid ' + (activeTag === tag ? 'var(--accent)' : 'var(--border-color)');
+        
+        tagEl.onclick = (e) => {
+            e.stopPropagation();
+            if (activeTag === tag) {
+                activeTag = null; // deselect
+            } else {
+                activeTag = tag;
+            }
+            renderNotes();
+        };
+        
+        tagsContainer.appendChild(tagEl);
+    });
+}
+
 function renderNotes() {
     notesListEl.innerHTML = '';
+    
+    renderTags();
     
     const groups = { '/': [] };
     
@@ -697,6 +853,8 @@ function renderNotes() {
         
         const headerEl = document.createElement('div');
         headerEl.className = 'folder-header' + (isCollapsed ? ' collapsed' : '') + (hasActive ? ' active' : '');
+        headerEl.dataset.folder = folder;
+        headerEl.addEventListener('contextmenu', (e) => showContextMenu(e, folder, 'folder'));
         const folderDisplayName = folder.split('/').pop();
         headerEl.innerHTML = `
             <div style="display: flex; align-items: center; flex: 1; min-width: 0;" title="${folder.replace(/"/g, '&quot;')}">
@@ -1030,6 +1188,12 @@ async function moveNoteToFolder(noteId, targetFolder, pushHistory = true) {
             activeNoteId = newId;
         }
         
+        const orderIdx = noteOrder.indexOf(noteId);
+        if (orderIdx !== -1) {
+            noteOrder[orderIdx] = newId;
+            saveNoteOrder();
+        }
+        
         const oldFolder = noteId === filename ? '/' : noteId.substring(0, noteId.length - filename.length - 1);
         
         // Push to history
@@ -1088,6 +1252,24 @@ async function mergeNoteToNote(srcId, dstId) {
     }
 }
 
+async function mergeFolderToFolder(srcFolder, dstFolder) {
+    if (srcFolder === dstFolder) return;
+    const notesToMove = currentNotes.filter(n => n.id.startsWith(srcFolder + '/'));
+    if (notesToMove.length === 0) return;
+    
+    if (await showConfirm(`Merge folder '${srcFolder}' into '${dstFolder}'?`)) {
+        const batchMoves = [];
+        for (const note of notesToMove) {
+            const res = await moveNoteToFolder(note.id, dstFolder, false);
+            if (res) batchMoves.push(res);
+        }
+        if (batchMoves.length > 0) {
+            pushSidebarAction({ type: 'BATCH_MOVE', moves: batchMoves });
+        }
+        renderNotes();
+    }
+}
+
 // Allow dropping onto the sidebar to move to root
 const sidebarEl = document.querySelector('.sidebar');
 sidebarEl.ondragenter = (e) => e.preventDefault();
@@ -1124,7 +1306,7 @@ sidebarEl.ondrop = async (e) => {
     }
 };
 
-newNoteBtn.onclick = async () => {
+if (newNoteBtn) newNoteBtn.onclick = async () => {
     const filename = Date.now().toString() + ".md";
     const id = currentFolder ? `${currentFolder}/${filename}` : filename;
     const newNote = {
@@ -1227,12 +1409,20 @@ function scheduleSave() {
                 note.tags = Array.from(tags).sort();
                 
                 updateTagsUI();
-                renderNotes();
+                
+                // Update DOM directly instead of full renderNotes() to prevent lag
+                const activeEl = document.querySelector(`.note-item[data-id="${CSS.escape(activeNoteId)}"]`);
+                if (activeEl) {
+                    const tEl = activeEl.querySelector('.note-title');
+                    const pEl = activeEl.querySelector('.note-preview');
+                    if (tEl) tEl.textContent = title;
+                    if (pEl) pEl.textContent = note.preview;
+                }
             }
         } catch (e) {
             console.error('Failed to save note', e);
         }
-    }, 500); // 500ms debounce
+    }, 1500); // 1500ms debounce
 }
 
 noteTitleEl.addEventListener('input', scheduleSave);
@@ -1249,7 +1439,127 @@ noteBodyEl.addEventListener('input', () => {
 });
 
 noteBodyEl.addEventListener('keydown', (e) => {
+    // 1. Tab / Shift+Tab for indentation
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = noteBodyEl.selectionStart;
+        const end = noteBodyEl.selectionEnd;
+        const val = noteBodyEl.value;
+        
+        if (start === end) {
+            // No selection
+            if (!e.shiftKey) {
+                // Insert 4 spaces
+                noteBodyEl.value = val.substring(0, start) + '    ' + val.substring(end);
+                noteBodyEl.selectionStart = noteBodyEl.selectionEnd = start + 4;
+            } else {
+                // Remove up to 4 spaces before cursor
+                const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+                const beforeCursor = val.substring(lineStart, start);
+                const spaceMatch = beforeCursor.match(/ {1,4}$/);
+                if (spaceMatch) {
+                    const removeLen = spaceMatch[0].length;
+                    noteBodyEl.value = val.substring(0, start - removeLen) + val.substring(end);
+                    noteBodyEl.selectionStart = noteBodyEl.selectionEnd = start - removeLen;
+                }
+            }
+        } else {
+            // Multi-line indent/unindent
+            const startLine = val.lastIndexOf('\n', start - 1) + 1;
+            const endLine = val.indexOf('\n', end);
+            const actualEnd = endLine === -1 ? val.length : endLine;
+            const lines = val.substring(startLine, actualEnd).split('\n');
+            
+            let newLines;
+            let startOffset = 0;
+            let totalLengthChange = 0;
+            
+            if (!e.shiftKey) {
+                newLines = lines.map((line, idx) => {
+                    if (idx === 0) startOffset = 4;
+                    totalLengthChange += 4;
+                    return '    ' + line;
+                });
+            } else {
+                newLines = lines.map((line, idx) => {
+                    const match = line.match(/^ {1,4}/);
+                    const removed = match ? match[0].length : 0;
+                    if (idx === 0) startOffset = -removed;
+                    totalLengthChange -= removed;
+                    return line.substring(removed);
+                });
+            }
+            
+            noteBodyEl.value = val.substring(0, startLine) + newLines.join('\n') + val.substring(actualEnd);
+            noteBodyEl.selectionStart = Math.max(startLine, start + startOffset);
+            noteBodyEl.selectionEnd = end + totalLengthChange;
+        }
+        scheduleSave();
+        textHistory.push(noteBodyEl.value);
+        return;
+    }
+    
+    // 2. Cmd/Ctrl key shortcuts
     if (e.ctrlKey || e.metaKey) {
+        const start = noteBodyEl.selectionStart;
+        const end = noteBodyEl.selectionEnd;
+        const val = noteBodyEl.value;
+
+        // Duplicate Line/Selection
+        if (e.key.toLowerCase() === 'd') {
+            e.preventDefault();
+            if (start === end) {
+                // Duplicate current line
+                const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+                const lineEnd = val.indexOf('\n', start);
+                const actualEnd = lineEnd === -1 ? val.length : lineEnd;
+                const lineText = val.substring(lineStart, actualEnd);
+                
+                noteBodyEl.value = val.substring(0, actualEnd) + '\n' + lineText + val.substring(actualEnd);
+                noteBodyEl.selectionStart = noteBodyEl.selectionEnd = actualEnd + 1 + (start - lineStart);
+            } else {
+                // Duplicate selection
+                const selected = val.substring(start, end);
+                noteBodyEl.value = val.substring(0, end) + selected + val.substring(end);
+                noteBodyEl.selectionStart = end;
+                noteBodyEl.selectionEnd = end + selected.length;
+            }
+            scheduleSave();
+            textHistory.push(noteBodyEl.value);
+            return;
+        }
+        
+        // Merge Lines
+        if (e.key.toLowerCase() === 'j') {
+            e.preventDefault();
+            if (start === end) {
+                // Join current line with next line
+                const lineEnd = val.indexOf('\n', start);
+                if (lineEnd !== -1) {
+                    let nextLineStart = lineEnd + 1;
+                    while (nextLineStart < val.length && (val[nextLineStart] === ' ' || val[nextLineStart] === '\t')) {
+                        nextLineStart++;
+                    }
+                    noteBodyEl.value = val.substring(0, lineEnd) + ' ' + val.substring(nextLineStart);
+                    noteBodyEl.selectionStart = noteBodyEl.selectionEnd = lineEnd + 1;
+                }
+            } else {
+                // Join all lines in selection
+                const before = val.substring(0, start);
+                const selected = val.substring(start, end);
+                const after = val.substring(end);
+                
+                const joined = selected.replace(/\n\s*/g, ' ');
+                noteBodyEl.value = before + joined + after;
+                noteBodyEl.selectionStart = start;
+                noteBodyEl.selectionEnd = start + joined.length;
+            }
+            scheduleSave();
+            textHistory.push(noteBodyEl.value);
+            return;
+        }
+
+        // Bold, Italic, Link (Original logic)
         let prefix = '', suffix = '';
         if (e.key.toLowerCase() === 'b') {
             e.preventDefault();
@@ -1263,9 +1573,6 @@ noteBodyEl.addEventListener('keydown', (e) => {
         }
         
         if (prefix && suffix) {
-            const start = noteBodyEl.selectionStart;
-            const end = noteBodyEl.selectionEnd;
-            const val = noteBodyEl.value;
             const selectedText = val.substring(start, end);
             
             noteBodyEl.value = val.substring(0, start) + prefix + selectedText + suffix + val.substring(end);
@@ -1284,17 +1591,34 @@ noteBodyEl.addEventListener('keydown', (e) => {
 
 // Delete note button (adding it dynamically to header later, or hotkey)
 document.addEventListener('keydown', async (e) => {
-    // Intercept Ctrl+Z / Cmd+Z for custom Undo
+    // Intercept Ctrl+Z / Cmd+Z for custom Undo/Redo
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
-        if (e.shiftKey) document.getElementById('redo-btn').click();
-        else document.getElementById('undo-btn').click();
+        const isTextInput = document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT' || document.activeElement.isContentEditable);
+        if (e.shiftKey) {
+            if (isTextInput) document.getElementById('redo-btn').click();
+            else {
+                const sRedo = document.getElementById('sidebar-redo-btn');
+                if (sRedo) sRedo.click();
+            }
+        } else {
+            if (isTextInput) document.getElementById('undo-btn').click();
+            else {
+                const sUndo = document.getElementById('sidebar-undo-btn');
+                if (sUndo) sUndo.click();
+            }
+        }
         return;
     }
     // Intercept Ctrl+Y / Cmd+Y for custom Redo
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
         e.preventDefault();
-        document.getElementById('redo-btn').click();
+        const isTextInput = document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT' || document.activeElement.isContentEditable);
+        if (isTextInput) document.getElementById('redo-btn').click();
+        else {
+            const sRedo = document.getElementById('sidebar-redo-btn');
+            if (sRedo) sRedo.click();
+        }
         return;
     }
     
@@ -1392,11 +1716,11 @@ async function updateVaultLocationUI() {
     }
 }
 
-openSettingsBtn.onclick = () => {
+if (openSettingsBtn) openSettingsBtn.onclick = () => {
     updateVaultLocationUI();
     settingsModal.style.display = 'flex';
 };
-closeSettingsBtn.onclick = () => settingsModal.style.display = 'none';
+if (closeSettingsBtn) closeSettingsBtn.onclick = () => settingsModal.style.display = 'none';
 
 if (changeVaultBtn) {
     changeVaultBtn.onclick = async () => {
@@ -1457,10 +1781,10 @@ function savePreferences() {
     applyPreferences(prefs);
 }
 
-themeSelect.onchange = savePreferences;
-fontSelect.onchange = savePreferences;
-fontSizeSelect.onchange = savePreferences;
-themeAccentColor.oninput = savePreferences;
+if (themeSelect) themeSelect.onchange = savePreferences;
+if (fontSelect) fontSelect.onchange = savePreferences;
+if (fontSizeSelect) fontSizeSelect.onchange = savePreferences;
+if (themeAccentColor) themeAccentColor.oninput = savePreferences;
 // Removed save button
 
 // Init
@@ -1542,6 +1866,34 @@ async function setPreviewMode(isView) {
         if (mdConverter) {
             previewContainer.innerHTML = mdConverter.makeHtml(noteBodyEl.value);
             
+            // Interactive Checkboxes
+            const checkboxes = previewContainer.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach((cb, index) => {
+                cb.removeAttribute('disabled');
+                cb.style.cursor = 'pointer';
+                cb.addEventListener('change', async (e) => {
+                    const isChecked = e.target.checked;
+                    let text = noteBodyEl.value;
+                    let count = -1;
+                    
+                    const regex = /^(\s*[-*+]\s+)\[([ xX])\]/gm;
+                    let newText = text.replace(regex, (match, prefix, state) => {
+                        count++;
+                        if (count === index) {
+                            return prefix + (isChecked ? '[x]' : '[ ]');
+                        }
+                        return match;
+                    });
+                    
+                    noteBodyEl.value = newText;
+                    if (activeNoteId) {
+                        textHistory.push(newText);
+                        await invoke('save_note', { id: activeNoteId, content: newText });
+                        renderNotes();
+                    }
+                });
+            });
+            
             // Resolve local image paths
             const imgs = previewContainer.querySelectorAll('img');
             for (let img of imgs) {
@@ -1572,35 +1924,78 @@ async function setPreviewMode(isView) {
     }
 }
 
-modeToggleBtn.onclick = () => {
+if (modeToggleBtn) modeToggleBtn.onclick = () => {
     setPreviewMode(!isPreviewMode);
 };
-modeEditBtn.onclick = (e) => {
+if (modeEditBtn) modeEditBtn.onclick = (e) => {
     e.stopPropagation();
     setPreviewMode(false);
 };
-modeViewBtn.onclick = (e) => {
+if (modeViewBtn) modeViewBtn.onclick = (e) => {
     e.stopPropagation();
     setPreviewMode(true);
 };
 
-// Undo/Redo Logic
-document.getElementById('undo-btn').onclick = () => {
-    const prevState = textHistory.undo();
-    if (prevState !== null) {
-        noteBodyEl.value = prevState;
-        scheduleSave();
+// Export to PDF
+document.getElementById('export-pdf-btn')?.addEventListener('click', () => {
+    if (!activeNoteId) {
+        showAlert("Please open a note to export.");
+        return;
     }
-    noteBodyEl.focus();
+    
+    // Switch to preview mode temporarily if not already
+    const wasPreview = isPreviewMode;
+    if (!wasPreview) setPreviewMode(true);
+    
+    setTimeout(() => {
+        const element = document.createElement('div');
+        element.style.padding = '20px';
+        element.style.fontFamily = 'Inter, sans-serif';
+        element.innerHTML = previewContainer.innerHTML;
+        
+        const noteName = activeNoteId.split('/').pop().replace('.md', '');
+        
+        const opt = {
+            margin:       10,
+            filename:     `${noteName}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        html2pdf().set(opt).from(element).save().then(() => {
+            if (!wasPreview) setPreviewMode(false);
+        });
+    }, 100);
+});
+
+// Undo/Redo Logic
+const undoBtnEl = document.getElementById('undo-btn');
+if (undoBtnEl) undoBtnEl.onclick = () => {
+    if (document.activeElement === noteBodyEl || document.activeElement === noteTitleEl) {
+        const prevState = textHistory.undo();
+        if (prevState !== null) {
+            noteBodyEl.value = prevState;
+            scheduleSave();
+        }
+        noteBodyEl.focus();
+    } else {
+        document.getElementById('sidebar-undo-btn')?.click();
+    }
 };
 
-document.getElementById('redo-btn').onclick = () => {
-    const nextState = textHistory.redo();
-    if (nextState !== null) {
-        noteBodyEl.value = nextState;
-        scheduleSave();
+const redoBtnEl = document.getElementById('redo-btn');
+if (redoBtnEl) redoBtnEl.onclick = () => {
+    if (document.activeElement === noteBodyEl || document.activeElement === noteTitleEl) {
+        const nextState = textHistory.redo();
+        if (nextState !== null) {
+            noteBodyEl.value = nextState;
+            scheduleSave();
+        }
+        noteBodyEl.focus();
+    } else {
+        document.getElementById('sidebar-redo-btn')?.click();
     }
-    noteBodyEl.focus();
 };
 
 // Export Logic
@@ -1712,7 +2107,7 @@ if (exportBtn && exportDropdown) {
 function updateTagsUI() {
     const tagsContainer = document.getElementById('tags-list');
     if (tagsContainer) {
-        tagsContainer.innerHTML = '';
+        if (tagsContainer) tagsContainer.innerHTML = '';
         const allTags = new Set();
         currentNotes.forEach(n => {
             if (n.tags) n.tags.forEach(t => allTags.add(t));
@@ -1937,6 +2332,8 @@ if (sidebarUndoBtn) sidebarUndoBtn.onclick = async () => {
         try {
             await invoke('delete_note', { id: newId });
             currentNotes = currentNotes.filter(n => n.id !== newId);
+            noteOrder = noteOrder.filter(id => id !== newId);
+            saveNoteOrder();
             if (activeNoteId === newId) activeNoteId = null;
             renderNotes();
         } catch(e) {}
@@ -1960,16 +2357,23 @@ if (sidebarUndoBtn) sidebarUndoBtn.onclick = async () => {
         try {
             await invoke('save_note', { id: note.id, content: content });
             currentNotes.push(note);
+            if (!noteOrder.includes(note.id)) {
+                noteOrder.push(note.id);
+                saveNoteOrder();
+            }
             renderNotes();
         } catch(e) {}
     } else if (action.type === 'BATCH_DELETE') {
         const { notes } = action;
-        for (const item of notes) {
+        await Promise.all(notes.map(async (item) => {
             try {
                 await invoke('save_note', { id: item.note.id, content: item.content });
                 currentNotes.push(item.note);
+                if (!noteOrder.includes(item.note.id)) noteOrder.push(item.note.id);
             } catch(e) {}
-        }
+        }));
+        await invoke('flush_workspace');
+        saveNoteOrder();
         renderNotes();
     } else if (action.type === 'BATCH_MOVE') {
         const { moves } = action;
@@ -1987,10 +2391,13 @@ if (sidebarUndoBtn) sidebarUndoBtn.onclick = async () => {
                 targetNote.title = parts[0] ? parts[0].replace(/^# /, '') : 'Untitled Note';
                 targetNote.preview = parts.slice(1).join('\n').substring(0, 50).replace(/\n/g, ' ');
             }
-            for (const d of deletedNotes) {
+            await Promise.all(deletedNotes.map(async (d) => {
                 await invoke('save_note', { id: d.note.id, content: d.content });
                 currentNotes.push(d.note);
-            }
+                if (!noteOrder.includes(d.note.id)) noteOrder.push(d.note.id);
+            }));
+            await invoke('flush_workspace');
+            saveNoteOrder();
             if (activeNoteId === targetId) {
                 const parts = oldTargetContent.split('\n\n');
                 noteTitleEl.value = parts[0] ? parts[0].replace(/^# /, '') : '';
@@ -2002,12 +2409,30 @@ if (sidebarUndoBtn) sidebarUndoBtn.onclick = async () => {
     } else if (action.type === 'DELETE_FOLDER') {
         const { folder, notes } = action;
         try {
-            for (const { note, content } of notes) {
+            await Promise.all(notes.map(async ({ note, content }) => {
                 await invoke('save_note', { id: note.id, content: content });
                 currentNotes.push(note);
-            }
+                if (!noteOrder.includes(note.id)) noteOrder.push(note.id);
+            }));
+            await invoke('flush_workspace');
+            saveNoteOrder();
             renderNotes();
         } catch(e) {}
+    } else if (action.type === 'BATCH_DUPLICATE') {
+        const { notes } = action;
+        await Promise.all(notes.map(async (item) => {
+            try {
+                await invoke('delete_note', { id: item.note.id });
+                currentNotes = currentNotes.filter(n => n.id !== item.note.id);
+                noteOrder = noteOrder.filter(id => id !== item.note.id);
+                if (activeNoteId === item.note.id) activeNoteId = null;
+            } catch(e) {}
+        }));
+        await invoke('flush_workspace');
+        saveNoteOrder();
+        if (!activeNoteId && currentNotes.length > 0) selectNote(currentNotes[0].id);
+        else if (!activeNoteId) { noteTitleEl.value = ''; noteBodyEl.value = ''; }
+        renderNotes();
     }
 };
 
@@ -2096,6 +2521,10 @@ if (sidebarRedoBtn) sidebarRedoBtn.onclick = async () => {
             const title = parts[0] ? parts[0].replace(/^# /, '').trim() : 'Untitled Note';
             const note = { id: newId, updated: Date.now(), title: title + ' (copy)', preview: '' };
             currentNotes.push(note);
+            if (!noteOrder.includes(newId)) {
+                noteOrder.push(newId);
+                saveNoteOrder();
+            }
             renderNotes();
         } catch(e) {}
     } else if (action.type === 'REORDER') {
@@ -2111,7 +2540,9 @@ if (sidebarRedoBtn) sidebarRedoBtn.onclick = async () => {
                 const content = await invoke('read_note', { id: note.id });
                 await invoke('save_note', { id: newId, content: content });
                 currentNotes.push({ id: newId, updated: Date.now(), title: note.title, preview: note.preview });
+                if (!noteOrder.includes(newId)) noteOrder.push(newId);
             }
+            saveNoteOrder();
             renderNotes();
         } catch(e) {}
     } else if (action.type === 'DELETE_NOTE') {
@@ -2119,6 +2550,8 @@ if (sidebarRedoBtn) sidebarRedoBtn.onclick = async () => {
         try {
             await invoke('delete_note', { id: note.id });
             currentNotes = currentNotes.filter(n => n.id !== note.id);
+            noteOrder = noteOrder.filter(id => id !== note.id);
+            saveNoteOrder();
             if (activeNoteId === note.id) activeNoteId = null;
             if (!activeNoteId && currentNotes.length > 0) selectNote(currentNotes[0].id);
             else if (!activeNoteId) { noteTitleEl.value = ''; noteBodyEl.value = ''; }
@@ -2126,13 +2559,16 @@ if (sidebarRedoBtn) sidebarRedoBtn.onclick = async () => {
         } catch(e) {}
     } else if (action.type === 'BATCH_DELETE') {
         const { notes } = action;
-        for (const item of notes) {
+        await Promise.all(notes.map(async (item) => {
             try {
                 await invoke('delete_note', { id: item.note.id });
                 currentNotes = currentNotes.filter(n => n.id !== item.note.id);
+                noteOrder = noteOrder.filter(id => id !== item.note.id);
                 if (activeNoteId === item.note.id) activeNoteId = null;
             } catch(e) {}
-        }
+        }));
+        await invoke('flush_workspace');
+        saveNoteOrder();
         if (!activeNoteId && currentNotes.length > 0) selectNote(currentNotes[0].id);
         else if (!activeNoteId) { noteTitleEl.value = ''; noteBodyEl.value = ''; }
         renderNotes();
@@ -2153,11 +2589,14 @@ if (sidebarRedoBtn) sidebarRedoBtn.onclick = async () => {
                 targetNote.title = parts[0] ? parts[0].replace(/^# /, '') : 'Untitled Note';
                 targetNote.preview = parts.slice(1).join('\n').substring(0, 50).replace(/\n/g, ' ');
             }
-            for (const d of deletedNotes) {
+            await Promise.all(deletedNotes.map(async (d) => {
                 await invoke('delete_note', { id: d.note.id });
                 currentNotes = currentNotes.filter(n => n.id !== d.note.id);
+                noteOrder = noteOrder.filter(id => id !== d.note.id);
                 if (activeNoteId === d.note.id) activeNoteId = null;
-            }
+            }));
+            await invoke('flush_workspace');
+            saveNoteOrder();
             if (activeNoteId === targetId) {
                 const parts = newTargetContent.split('\n\n');
                 noteTitleEl.value = parts[0] ? parts[0].replace(/^# /, '') : '';
@@ -2171,13 +2610,28 @@ if (sidebarRedoBtn) sidebarRedoBtn.onclick = async () => {
     } else if (action.type === 'DELETE_FOLDER') {
         const { folder, notes } = action;
         try {
-            for (const { note } of notes) {
+            await Promise.all(notes.map(async ({ note }) => {
                 await invoke('delete_note', { id: note.id });
                 currentNotes = currentNotes.filter(n => n.id !== note.id);
+                noteOrder = noteOrder.filter(id => id !== note.id);
                 if (activeNoteId === note.id) activeNoteId = null;
-            }
+            }));
+            await invoke('flush_workspace');
+            saveNoteOrder();
             renderNotes();
         } catch(e) {}
+    } else if (action.type === 'BATCH_DUPLICATE') {
+        const { notes } = action;
+        await Promise.all(notes.map(async (item) => {
+            try {
+                await invoke('save_note', { id: item.note.id, content: item.content });
+                currentNotes.push(item.note);
+                if (!noteOrder.includes(item.note.id)) noteOrder.push(item.note.id);
+            } catch(e) {}
+        }));
+        await invoke('flush_workspace');
+        saveNoteOrder();
+        renderNotes();
     }
 };
 
@@ -2435,7 +2889,11 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         document.getElementById('new-folder-btn')?.click();
     }
-    else if (isCmd && e.key.toLowerCase() === 'f') {
+    else if (isCmd && e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        document.body.classList.toggle('focus-mode');
+    }
+    else if (isCmd && !e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         document.getElementById('search-input')?.focus();
     }

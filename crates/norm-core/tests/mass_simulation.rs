@@ -9,7 +9,7 @@ use tempfile::TempDir;
 #[test]
 fn test_mass_simulation() {
     let num_personas = 500;
-    let key = VaultKey::new([42u8; 32]);
+    let _key = VaultKey::new([42u8; 32]);
     let hub_dir = TempDir::new().unwrap();
     let hub_root = hub_dir.path().to_path_buf();
 

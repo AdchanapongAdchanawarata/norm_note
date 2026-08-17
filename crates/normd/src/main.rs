@@ -247,7 +247,7 @@ fn join(vault: &PathBuf, target: PathBuf, recovery: &str, encrypt: bool) -> Resu
     Ok(())
 }
 
-fn open(vault: &PathBuf) -> Result<(VaultConfig, Workspace)> {
+fn open(vault: &std::path::Path) -> Result<(VaultConfig, Workspace)> {
     let config = VaultConfig::load(vault)?.ok_or_else(|| {
         anyhow::anyhow!(
             "{} is not a norm_note vault. Run `normd init` there first.",
@@ -259,7 +259,7 @@ fn open(vault: &PathBuf) -> Result<(VaultConfig, Workspace)> {
     Ok((config, ws))
 }
 
-fn sync_once(vault: &PathBuf) -> Result<()> {
+fn sync_once(vault: &std::path::Path) -> Result<()> {
     let (config, mut ws) = open(vault)?;
 
     let Some(target) = &config.target else {
@@ -302,7 +302,7 @@ fn sync_once(vault: &PathBuf) -> Result<()> {
 /// snapshot every few minutes.
 const COMPACT_THRESHOLD: usize = 200;
 
-fn watch(vault: &PathBuf, interval: u64) -> Result<()> {
+fn watch(vault: &std::path::Path, interval: u64) -> Result<()> {
     let (config, mut ws) = open(vault)?;
     let target = config.target.as_ref().map(ChunkStore::new);
 
@@ -376,7 +376,7 @@ fn watch(vault: &PathBuf, interval: u64) -> Result<()> {
     Ok(())
 }
 
-fn doctor(vault: &PathBuf) -> Result<()> {
+fn doctor(vault: &std::path::Path) -> Result<()> {
     let (config, ws) = open(vault)?;
     let key = keyring::load(config.vault_id)?;
     let store = ws.replica().store();
@@ -418,13 +418,13 @@ fn parse_recovery(s: &str) -> Result<[u8; 32]> {
     recovery::decode(s)
 }
 
-fn trash_list(vault: &PathBuf) -> Result<()> {
+fn trash_list(vault: &std::path::Path) -> Result<()> {
     let entries = norm_core::trash::list(vault)?;
     if entries.is_empty() {
         println!("Trash is empty.");
         return Ok(());
     }
-    println!("{:<20} {:<64} {}", "TIMESTAMP", "HASH", "NOTE ID");
+    println!("{:<20} {:<64} NOTE ID", "TIMESTAMP", "HASH");
     for entry in entries {
         let ts = entry.deleted_at.parse::<u64>().unwrap_or(0);
         println!("{:<20} {:<64} {}", ts, entry.hash, entry.doc_id);
@@ -432,7 +432,7 @@ fn trash_list(vault: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn trash_restore(vault: &PathBuf, hash: &str) -> Result<()> {
+fn trash_restore(vault: &std::path::Path, hash: &str) -> Result<()> {
     if let Some((id, text)) = norm_core::trash::restore(vault, hash)? {
         let (_config, mut ws) = open(vault)?;
         ws.replica_mut().write(&id, &text)?;
@@ -444,7 +444,7 @@ fn trash_restore(vault: &PathBuf, hash: &str) -> Result<()> {
     Ok(())
 }
 
-fn trash_empty(vault: &PathBuf, days: u32) -> Result<()> {
+fn trash_empty(vault: &std::path::Path, days: u32) -> Result<()> {
     let removed = norm_core::trash::purge(vault, days)?;
     println!(
         "Emptied {} notes from trash older than {} days.",

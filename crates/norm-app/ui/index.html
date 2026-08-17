@@ -62,7 +62,7 @@
                     <!-- Tags will be injected here -->
                 </div>
             </div>
-            <div id="bulk-action-bar" style="display: none; padding: 10px 16px; background-color: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+            <div id="bulk-action-bar" style="display: none; padding: 10px 16px; background-color: var(--sidebar-bg); border-bottom: 1px solid var(--border-color); align-items: center; justify-content: space-between;">
                 <span id="bulk-count" style="font-size: 0.85em; opacity: 0.8; font-weight: bold;">0 selected</span>
                 <div style="display: flex; gap: 8px;">
                     <button class="inline-btn" id="bulk-duplicate-btn" title="Duplicate Selected">
@@ -333,6 +333,14 @@ style="width: 28px; height: 28px; border: none; border-radius: 50%; cursor: poin
         </div>
     </div>
     
+    <div id="context-menu" class="context-menu" style="display: none; position: absolute; z-index: 10000; background: var(--bg-color, #fff); border: 1px solid var(--border-color, #ccc); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 150px; padding: 4px 0;">
+        <div class="menu-item" id="ctx-rename" style="padding: 8px 16px; cursor: pointer;">Rename</div>
+        <div class="menu-item" id="ctx-move" style="padding: 8px 16px; cursor: pointer;">Move</div>
+        <div class="menu-item" id="ctx-duplicate" style="padding: 8px 16px; cursor: pointer;">Duplicate</div>
+        <div style="height: 1px; background: var(--border-color, #eee); margin: 4px 0;"></div>
+        <div class="menu-item" id="ctx-delete" style="padding: 8px 16px; cursor: pointer; color: #ff3b30;">Delete</div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>

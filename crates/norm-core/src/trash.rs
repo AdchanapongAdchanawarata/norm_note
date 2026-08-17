@@ -136,10 +136,8 @@ pub fn purge(root: &Path, max_age_days: u32) -> Result<usize> {
 
     for entry in entries {
         if let Ok(ts) = entry.deleted_at.parse::<u64>() {
-            if now.saturating_sub(ts) >= max_age_secs {
-                if fs::remove_file(&entry.path).is_ok() {
-                    removed += 1;
-                }
+            if now.saturating_sub(ts) >= max_age_secs && fs::remove_file(&entry.path).is_ok() {
+                removed += 1;
             }
         }
     }
