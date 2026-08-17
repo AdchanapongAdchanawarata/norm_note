@@ -11,7 +11,13 @@ crates/norm-app/src-tauri/target
 
 # Test vaults
 /scratch
+/norm_ui_vault
 *.norm-test
+generate_mocks.py
+
+# Raw design assets / root logos
+*.ai
+logo norm note*.png
 
 # App Data
 .env

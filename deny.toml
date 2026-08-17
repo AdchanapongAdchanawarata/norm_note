@@ -20,9 +20,9 @@ multiple-versions = "warn"
 wildcards = "deny"
 
 deny = [
-    { name = "reqwest" },
-    { name = "hyper" },
-    { name = "hyper-util" },
+    { name = "reqwest", wrappers = ["norm-app"] },
+    { name = "hyper", wrappers = ["norm-app"] },
+    { name = "hyper-util", wrappers = ["norm-app"] },
     { name = "ureq" },
     { name = "curl" },
     { name = "curl-sys" },
@@ -32,7 +32,7 @@ deny = [
     { name = "warp" },
     { name = "tiny_http" },
     { name = "quinn" },
-    { name = "rustls" },
+    { name = "rustls", wrappers = ["norm-app"] },
     { name = "native-tls" },
     { name = "openssl" },
     { name = "openssl-sys" },
@@ -60,6 +60,9 @@ allow = [
     "ISC",
     "MPL-2.0",
     "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "Unlicense",
+    "0BSD",
     "Zlib",
     # `notify`, the file watcher. A public-domain dedication, so there is
     # nothing to comply with. Worth knowing that some organisations exclude
