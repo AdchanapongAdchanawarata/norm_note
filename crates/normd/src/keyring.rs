@@ -93,8 +93,8 @@ fn to_hex(bytes: &[u8]) -> String {
 fn from_hex(s: &str) -> Result<Vec<u8>> {
     let mut out = Vec::with_capacity(s.len() / 2);
     for i in 0..(s.len() / 2) {
-        let b = u8::from_str_radix(&s[i * 2..i * 2 + 2], 16)
-            .with_context(|| "Invalid hex sequence")?;
+        let b =
+            u8::from_str_radix(&s[i * 2..i * 2 + 2], 16).with_context(|| "Invalid hex sequence")?;
         out.push(b);
     }
     Ok(out)
