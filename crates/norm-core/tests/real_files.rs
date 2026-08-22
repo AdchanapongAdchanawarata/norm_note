@@ -190,10 +190,8 @@ fn non_markdown_files_are_ignored() {
 
 #[test]
 fn a_deleted_file_is_restored_rather_than_propagated() {
-    // Documented behaviour, not an accident: v0.1 has no delete operation, and
-    // guessing that a missing file means "delete everywhere" is unrecoverable
-    // when the guess is wrong. This test exists so the decision cannot be
-    // changed by accident.
+    // In v0.2, deleting a file on disk that was previously materialized
+    // tombstones the note in the CRDT and saves it to trash.
     let dir = tempfile::tempdir().unwrap();
     let c = tempfile::tempdir().unwrap();
     let cloud = ChunkStore::new(c.path());
@@ -205,7 +203,7 @@ fn a_deleted_file_is_restored_rather_than_propagated() {
     fs::remove_file(dir.path().join("n.md")).unwrap();
     ws.cycle(&cloud).unwrap();
 
-    assert_eq!(read_file(dir.path(), "n.md").as_deref(), Some("valuable\n"));
+    assert!(ws.replica().is_deleted(&note("n.md")).unwrap());
 }
 
 #[test]
