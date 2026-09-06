@@ -4,7 +4,7 @@ A minimalist sanctuary for your thoughts. A local-first Markdown vault built on 
 
 No LLM. No telemetry. No server. No subscriptions.
 
-> **Status: v1.0.3 Release.** Norm Note has evolved from a CLI sync daemon into a full-featured desktop application with a beautiful, minimalist UI. 
+> **Status: v1.0.4 Release.** Norm Note has evolved from a CLI sync daemon into a full-featured desktop application with a beautiful, minimalist UI. 
 
 ---
 

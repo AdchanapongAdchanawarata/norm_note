@@ -732,11 +732,11 @@ fn build_menu(
 }
 
 #[tauri::command]
-fn update_recent_menu(app: tauri::AppHandle, recent_notes: Vec<(String, String)>) {
+fn update_recent_menu(_app: tauri::AppHandle, _recent_notes: Vec<(String, String)>) {
     #[cfg(target_os = "macos")]
     {
-        if let Ok(menu) = build_menu(&app, &recent_notes) {
-            let _ = app.set_menu(menu);
+        if let Ok(menu) = build_menu(&_app, &_recent_notes) {
+            let _ = _app.set_menu(menu);
         }
     }
 }
@@ -894,27 +894,24 @@ fn main() {
                         final_script = format!("if (window.selectNote) window.selectNote('{}');", note_id);
                     }
                     if !final_script.is_empty() {
-                        let res = window.eval(&final_script);
-                        std::fs::write(format!("/Users/adchanapong/Desktop/menu_eval_{}.log", id.replace(":", "_")), format!("script: {}\nres: {:?}", final_script, res)).ok();
+                        let _ = window.eval(&final_script);
                     }
                 }
             }
         })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                #[cfg(target_os = "macos")]
-                {
-                    let _ = window.hide();
-                    api.prevent_close();
-                }
+        .on_window_event(|_window, _event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::WindowEvent::CloseRequested { api, .. } = _event {
+                let _ = _window.hide();
+                api.prevent_close();
             }
         })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(|app_handle, event| match event {
+        .run(|_app_handle, event| match event {
             #[cfg(target_os = "macos")]
             tauri::RunEvent::Reopen { .. } => {
-                if let Some(window) = app_handle.get_webview_window("main") {
+                if let Some(window) = _app_handle.get_webview_window("main") {
                     let _ = window.show();
                     let _ = window.set_focus();
                 }
