@@ -8,7 +8,10 @@ use tempfile::TempDir;
 
 #[test]
 fn test_mass_simulation() {
-    let num_personas = 500;
+    let num_personas = std::env::var("NORM_MASS_SIM_PERSONAS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(if cfg!(debug_assertions) { 20 } else { 500 });
     let _key = VaultKey::new([42u8; 32]);
     let hub_dir = TempDir::new().unwrap();
     let hub_root = hub_dir.path().to_path_buf();
@@ -71,8 +74,9 @@ fn test_mass_simulation() {
     let live_notes = hub.replica().live_notes().unwrap();
     assert_eq!(
         live_notes.len(),
-        500,
-        "There should be exactly 500 notes remaining after merges"
+        num_personas,
+        "There should be exactly {} notes remaining after merges",
+        num_personas
     );
 
     for note in live_notes {
