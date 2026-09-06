@@ -312,6 +312,8 @@ impl Replica {
         let pushed = target.replicate_from(&self.store)?.len();
         let pulled = self.store.replicate_from(target)?.len();
         let applied = self.absorb()?;
+        let _ = self.store.prune_all_superseded(Some(target));
+        let _ = target.prune_all_superseded(None);
         Ok(SyncOutcome {
             pushed,
             pulled,

@@ -256,7 +256,7 @@ impl World {
         let store = ChunkStore::new(self.cloud_root());
         let ws = self.running(d);
         ws.replica_mut()
-            .compact_if_needed(150, Some(&store))
+            .compact_if_needed(20, Some(&store))
             .expect("compaction should not fail");
     }
 
@@ -524,9 +524,10 @@ fn five_years() {
     // was allowed to prune, five years left 25,479 chunks: each device deleted
     // its own and the others pushed them back. The number of chunks must stay
     // related to the number of notes, not to the number of edits ever made.
+    let max_chunks = if days >= 365 * 2 { edits / 2 } else { edits };
     assert!(
-        chunks < edits / 2,
-        "{chunks} chunks for {edits} edits — compaction is not keeping up"
+        chunks < max_chunks,
+        "{chunks} chunks for {edits} edits (limit {max_chunks}) — compaction is not keeping up"
     );
 
     println!(

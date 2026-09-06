@@ -147,7 +147,21 @@ impl ChunkStore {
         let mut copied = Vec::new();
 
         for device in source.devices()? {
+            let self_snap = self.latest_snapshot(device)?;
+            let source_snap = source.latest_snapshot(device)?;
+            let max_snap = match (self_snap, source_snap) {
+                (Some(a), Some(b)) => Some(a.max(b)),
+                (Some(a), None) => Some(a),
+                (None, Some(b)) => Some(b),
+                (None, None) => None,
+            };
+
             for id in source.list(device)? {
+                if let Some(snap_seq) = max_snap {
+                    if id.seq < snap_seq {
+                        continue;
+                    }
+                }
                 if self.has(id) {
                     continue;
                 }
